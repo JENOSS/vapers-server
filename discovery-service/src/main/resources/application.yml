@@ -1,0 +1,26 @@
+server:
+  port: 8761
+
+spring:
+  application:
+    name: discovery-service
+  rabbitmq:
+    host: 127.0.0.1
+    port: 5672
+    stream:
+      username: guest
+      password: guest
+
+# ???? ???? ??? ??? ??? ??? ???
+# ??? ?? ??? ??? ??? ???? ?? ?? ??
+eureka:
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: refresh, health, beans, httptrace, busrefresh
