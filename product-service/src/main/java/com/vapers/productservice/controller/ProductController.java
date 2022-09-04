@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,15 +43,24 @@ public class ProductController {
     }
 
     @GetMapping("/products")
-    public ResponseEntity<List<ResponseProduct>> getProducts(){
-        Iterable<ProductEntity> productEntities = productService.getProductByAll();
+    public ResponseEntity<List<ResponseProduct>> getProducts(HttpServletRequest request){
+        String category = request.getParameter("category");
+        String name = request.getParameter("name");
 
-        List<ResponseProduct> result = new ArrayList<>();
-        productEntities.forEach(v -> {
-            result.add(new ModelMapper().map(v, ResponseProduct.class));
-        });
+        if(category != null){
+            return getProductsByCategory(Integer.parseInt(category));
+        }else if (name != null){
+            return getProductsByNameContaining(name);
+        }else {
+            Iterable<ProductEntity> productEntities = productService.getProductByAll();
 
-        return ResponseEntity.status(HttpStatus.OK).body(result);
+            List<ResponseProduct> result = new ArrayList<>();
+            productEntities.forEach(v -> {
+                result.add(new ModelMapper().map(v, ResponseProduct.class));
+            });
+
+            return ResponseEntity.status(HttpStatus.OK).body(result);
+        }
     }
 
     @GetMapping("/products/{id}")
@@ -60,28 +70,26 @@ public class ProductController {
         return ResponseEntity.status(HttpStatus.OK).body(result);
     }
 
-//    @RequestMapping(value="/products", method=RequestMethod.GET)
-//    public ResponseEntity<List<ResponseProduct>> getProductsByCategory(@RequestParam(value = "category") Integer category){
-//        Iterable<ProductEntity> productEntities = productService.getProductByCategory(category);
-//
-//        List<ResponseProduct> result = new ArrayList<>();
-//        productEntities.forEach(v -> {
-//            result.add(new ModelMapper().map(v, ResponseProduct.class));
-//        });
-//
-//        return ResponseEntity.status(HttpStatus.OK).body(result);
-//    }
-//
-//    @RequestMapping(value="/products", method=RequestMethod.GET)
-//    public ResponseEntity<List<ResponseProduct>> getProductsByNameContaining(@RequestParam(value = "name") String name){
-//        Iterable<ProductEntity> productEntities = productService.getProductByNameContaining(name);
-//
-//        List<ResponseProduct> result = new ArrayList<>();
-//        productEntities.forEach(v -> {
-//            result.add(new ModelMapper().map(v, ResponseProduct.class));
-//        });
-//
-//        return ResponseEntity.status(HttpStatus.OK).body(result);
-//    }
+    public ResponseEntity<List<ResponseProduct>> getProductsByCategory(Integer category){
+        Iterable<ProductEntity> productEntities = productService.getProductByCategory(category);
+
+        List<ResponseProduct> result = new ArrayList<>();
+        productEntities.forEach(v -> {
+            result.add(new ModelMapper().map(v, ResponseProduct.class));
+        });
+
+        return ResponseEntity.status(HttpStatus.OK).body(result);
+    }
+
+    public ResponseEntity<List<ResponseProduct>> getProductsByNameContaining(String name){
+        Iterable<ProductEntity> productEntities = productService.getProductByNameContaining(name);
+
+        List<ResponseProduct> result = new ArrayList<>();
+        productEntities.forEach(v -> {
+            result.add(new ModelMapper().map(v, ResponseProduct.class));
+        });
+
+        return ResponseEntity.status(HttpStatus.OK).body(result);
+    }
 
 }
