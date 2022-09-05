@@ -58,7 +58,7 @@ public class ProductServiceImpl implements ProductService{
 
     @Override
     public void updateProduct(Map<Object, Object> item) {
-        Long id = (Long)item.get("id");
+        Long id = Long.parseLong(String.valueOf(item.get("productId")));
         Integer qty = (Integer)item.get("qty");
 
         if(id == null || qty == null){

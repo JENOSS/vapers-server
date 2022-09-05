@@ -22,7 +22,7 @@ public class KafkaConsumer {
         this.productService = productService;
     }
 
-    @KafkaListener(topics = "vapers-product-topic")
+    @KafkaListener(topics = "vapers-order-topic")
     public void updateQty(String kafkaMessage){
         log.info("Kafka Message: -> "+ kafkaMessage);
 
