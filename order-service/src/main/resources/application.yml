@@ -22,7 +22,7 @@ spring:
     show-sql: true
     generate-ddl: true
   datasource:
-    url: jdbc:mysql://localhost:3309/order_service?useSSL=false&useUnicode=true&serverTimezone=Asia/Seoul
+    url: jdbc:mysql://localhost:3309/order_service?useSSL=false&allowPublicKeyRetrieval=true&useUnicode=true&serverTimezone=Asia/Seoul
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: root
     password: 1234

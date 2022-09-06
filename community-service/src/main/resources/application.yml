@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: user-service
+    name: community-service
   rabbitmq:
     host: 127.0.0.1
     port: 5672
@@ -22,14 +22,14 @@ spring:
     show-sql: true
     generate-ddl: true
   datasource:
-    url: jdbc:mysql://localhost:3307/user_service?useSSL=false&allowPublicKeyRetrieval=true&useUnicode=true&serverTimezone=Asia/Seoul
+    url: jdbc:mysql://localhost:3310/community_service?useSSL=false&useUnicode=true&serverTimezone=Asia/Seoul
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: root
     password: 1234
 
 logging:
   level:
-    com.vapers.userservice.client: DEBUG
+    com.vapers.orerservice.client: DEBUG
 
 management:
   endpoints:
@@ -37,9 +37,6 @@ management:
       exposure:
         include: refresh, health, beans, busrefresh
 
-# eureka client ??
-# instance-id : ?? ??? ???? eureka ??? ???? ???? ? ?? ?? ??????
-# service-url : ??? ?? ??
 eureka:
   instance:
     instance-id: ${spring.application.name} :${spring.application.instance_id:${random.value}}

@@ -54,6 +54,8 @@ public class UserServiceImpl implements UserService{
 
     @Override
     public UserDto createUser(UserDto userDto) {
+        validateDuplicateUser(userDto);
+
         userDto.setUserToken(UUID.randomUUID().toString());
 
         ModelMapper mapper = new ModelMapper();
@@ -88,6 +90,27 @@ public class UserServiceImpl implements UserService{
             throw new UsernameNotFoundException(email);
 
         return new ModelMapper().map(userEntity, UserDto.class);
+    }
+
+    @Override
+    public UserDto getUserByNickName(String nickName) {
+        UserEntity userEntity = userRepository.findByNickName(nickName);
+
+        if(userEntity == null)
+            throw new UsernameNotFoundException(nickName);
+
+        return new ModelMapper().map(userEntity, UserDto.class);
+    }
+
+
+    private void validateDuplicateUser(UserDto userDto) {
+        if(userRepository.findByEmail(userDto.getEmail()) != null){
+            throw new IllegalStateException("이미 존재하는 회원입니다.");
+        }
+
+        if(userRepository.findByNickName(userDto.getNickName()) != null){
+            throw new IllegalStateException("이미 존재하는 닉네임입니다.");
+        }
     }
 
 

@@ -44,9 +44,9 @@ public class OrderController {
         OrderDto orderDto = mapper.map(requestOrderCreate, OrderDto.class);
         orderDto.setIsCanceled(false);
 
-        orderService.createOrder(orderDto);
+        OrderDto newOrder = orderService.createOrder(orderDto);
         /* kafka */
-        kafkaProducer.send("vapers-order-topic", orderDto);
+        if(newOrder.getUnitPrice() != -1) kafkaProducer.send("vapers-order-topic", orderDto);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(null);
     }
@@ -73,5 +73,14 @@ public class OrderController {
         });
 
         return ResponseEntity.status(HttpStatus.OK).body(result);
+    }
+
+    @GetMapping("/order/cancel/{id}")
+    public ResponseEntity<Void> cancelOrder(@PathVariable("id") Long id){
+        OrderDto orderDto = orderService.cancelOrder(id);
+        /* kafka */
+        kafkaProducer.send("vapers-order-topic", orderDto);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(null);
     }
 }

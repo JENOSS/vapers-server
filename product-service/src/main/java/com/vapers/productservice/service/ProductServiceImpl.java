@@ -60,6 +60,7 @@ public class ProductServiceImpl implements ProductService{
     public void updateProduct(Map<Object, Object> item) {
         Long id = Long.parseLong(String.valueOf(item.get("productId")));
         Integer qty = (Integer)item.get("qty");
+        Boolean isCanceled = (Boolean)item.get("isCanceled");
 
         if(id == null || qty == null){
             throw new NullPointerException();
@@ -68,7 +69,11 @@ public class ProductServiceImpl implements ProductService{
         Optional<ProductEntity> entity = productRepository.findById(id);
         if(entity.isPresent()){
             ProductEntity productEntity = entity.get();
-            productEntity.setStock(productEntity.getStock() - qty);
+            if(isCanceled) {
+                productEntity.setStock(productEntity.getStock() + qty);
+            }else{
+                productEntity.setStock(productEntity.getStock() - qty);
+            }
             productRepository.save(productEntity);
         }
     }

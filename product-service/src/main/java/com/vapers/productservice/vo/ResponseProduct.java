@@ -11,6 +11,7 @@ import java.util.Date;
 
 @Data
 public class ResponseProduct {
+    private Long id;
     private String name;
     private String productImage;
     private String description;

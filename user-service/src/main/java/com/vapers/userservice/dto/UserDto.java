@@ -9,6 +9,7 @@ import java.util.List;
 public class UserDto {
     private String email;
     private String name;
+    private String nickName;
     private String pwd;
     private String userToken;
     private Date createdAt;

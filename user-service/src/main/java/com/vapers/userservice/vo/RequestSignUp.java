@@ -18,6 +18,11 @@ public class RequestSignUp {
     @Email
     private String name;
 
+    @NotNull(message = "Name cannot be null")
+    @Size(min = 2, message = "name not be less than two characters")
+    @Email
+    private String nickName;
+
     @NotNull(message = "Password cannot be null")
     @Size(min = 8, message = "Password mus be equal or grater than 8 characters")
     private String pwd;
