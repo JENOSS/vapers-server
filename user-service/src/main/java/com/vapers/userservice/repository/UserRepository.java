@@ -2,9 +2,8 @@ package com.vapers.userservice.repository;
 
 import org.springframework.data.repository.CrudRepository;
 
-public interface UserRepository extends CrudRepository<UserEntity, Long> {
-    UserEntity findByUserToken(String userToken);
-    UserEntity findByEmail(String userEmail);
+import java.util.Optional;
 
-    UserEntity findByNickName(String nickName);
+public interface UserRepository extends CrudRepository<UserEntity, Long> {
+    Optional<UserEntity> findByUserName(String userName);
 }

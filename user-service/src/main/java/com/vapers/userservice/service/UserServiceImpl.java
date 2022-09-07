@@ -8,19 +8,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cloud.client.circuitbreaker.CircuitBreaker;
-import org.springframework.cloud.client.circuitbreaker.CircuitBreakerFactory;
 import org.springframework.core.env.Environment;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -28,88 +24,76 @@ public class UserServiceImpl implements UserService{
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
     private final Environment env;
+    private final ModelMapper mapper;
 
-    // BCryptPasswordEncoder 는 어디서도 Bean 등록이 안 되어 있으니 문제
-    // Application 에서 등록하자
     @Autowired
     public UserServiceImpl(UserRepository userRepository,
                            BCryptPasswordEncoder passwordEncoder,
-                           Environment env) {
+                           Environment env,
+                           ModelMapper mapper) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.env = env;
+        this.mapper = mapper;
     }
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        UserEntity userEntity = userRepository.findByEmail(username);
+        Optional<UserEntity> userEntity = userRepository.findByUserName(username);
 
-        if (userEntity == null) throw new UsernameNotFoundException(username);
+        if (userEntity.isEmpty()) throw new UsernameNotFoundException(username);
 
         // 마지막 리스트는 권한
-        return new User(userEntity.getEmail(), userEntity.getEncryptedPwd()
+        return new User(userEntity.get().getUserName(), userEntity.get().getEncryptedPwd()
                 , true, true, true, true,
                 new ArrayList<>());
     }
 
     @Override
-    public UserDto createUser(UserDto userDto) {
-        validateDuplicateUser(userDto);
+    public UserDto.responseCreate createUser(UserDto.requestCreate userDto) {
+        validateDuplicateUser(userDto.getUserName());
 
-        userDto.setUserToken(UUID.randomUUID().toString());
-
-        ModelMapper mapper = new ModelMapper();
-        mapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
         UserEntity userEntity = mapper.map(userDto, UserEntity.class);
         userEntity.setEncryptedPwd(passwordEncoder.encode(userDto.getPwd()));
         userRepository.save(userEntity);
 
-        return mapper.map(userEntity, UserDto.class);
+        return mapper.map(userEntity, UserDto.responseCreate.class);
     }
 
     @Override
-    public UserDto getUserByUserToken(String userToken) {
-        UserEntity userEntity = userRepository.findByUserToken(userToken);
+    public UserDto.info getUserByUserName(String userName){
+        Optional<UserEntity> userEntity = userRepository.findByUserName(userName);
 
-        if (userEntity == null)
-            throw new UsernameNotFoundException("user not found");
+        if(userEntity.isEmpty())
+            throw new UsernameNotFoundException(userName);
 
-        return new ModelMapper().map(userEntity, UserDto.class);
+        return mapper.map(userEntity, UserDto.info.class);
     }
 
     @Override
-    public Iterable<UserEntity> getUserByAll() {
-        return userRepository.findAll();
+    public List<UserDto.info> getAllUsers() {
+        List<UserDto.info> result = new ArrayList<>();
+
+        userRepository.findAll().forEach(v->{
+            result.add(mapper.map(v, UserDto.info.class));
+        });
+
+        return result;
     }
 
     @Override
-    public UserDto getUserByEmail(String email) {
-        UserEntity userEntity = userRepository.findByEmail(email);
+    public UserDto.info getUserById(Long id) {
+        Optional<UserEntity> userEntity = userRepository.findById(id);
 
-        if(userEntity == null)
-            throw new UsernameNotFoundException(email);
+        if(userEntity.isEmpty())
+            throw new NoSuchElementException(id.toString());
 
-        return new ModelMapper().map(userEntity, UserDto.class);
+        return mapper.map(userEntity, UserDto.info.class);
     }
 
-    @Override
-    public UserDto getUserByNickName(String nickName) {
-        UserEntity userEntity = userRepository.findByNickName(nickName);
-
-        if(userEntity == null)
-            throw new UsernameNotFoundException(nickName);
-
-        return new ModelMapper().map(userEntity, UserDto.class);
-    }
-
-
-    private void validateDuplicateUser(UserDto userDto) {
-        if(userRepository.findByEmail(userDto.getEmail()) != null){
-            throw new IllegalStateException("이미 존재하는 회원입니다.");
-        }
-
-        if(userRepository.findByNickName(userDto.getNickName()) != null){
-            throw new IllegalStateException("이미 존재하는 닉네임입니다.");
+    private void validateDuplicateUser(String userName) {
+        if(userRepository.findByUserName(userName).isPresent()){
+            throw new DuplicateKeyException(userName);
         }
     }
 

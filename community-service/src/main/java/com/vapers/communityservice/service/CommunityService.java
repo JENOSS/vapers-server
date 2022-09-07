@@ -8,6 +8,6 @@ public interface CommunityService {
     Iterable<PostEntity> getPosts();
     Iterable<PostEntity> getPostsSortedViews();
     Iterable<PostEntity> getPostsByCategory(Integer category);
-    Iterable<PostEntity> getPostByUserToken(String userToken);
+    Iterable<PostEntity> getPostsByUserToken(String userToken);
 
 }

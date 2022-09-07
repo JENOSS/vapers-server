@@ -37,7 +37,8 @@ public class OrderServiceImpl implements OrderService{
 
         log.info("before call product-service");
         CircuitBreaker circuitBreaker = circuitBreakerFactory.create("circuitBreaker");
-        ResponseProduct product = circuitBreaker.run(() -> productServiceClient.getProduct(orderDto.getProductId()));
+        ResponseProduct product = circuitBreaker.run(() -> productServiceClient.getProduct(orderDto.getProductId()),
+                throwable -> null);
         log.info("after call product-service");
 
         orderDto.setUnitPrice(product != null ? product.getPrice() : -1);

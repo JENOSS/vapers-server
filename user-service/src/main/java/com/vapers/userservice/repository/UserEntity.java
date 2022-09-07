@@ -1,11 +1,12 @@
 package com.vapers.userservice.repository;
 
 import lombok.Data;
+import lombok.Getter;
 import org.springframework.integration.dsl.IntegrationDsl;
 
 import javax.persistence.*;
 
-@Data
+@Getter
 @Entity
 @Table(name = "users")
 public class UserEntity {
@@ -14,17 +15,15 @@ public class UserEntity {
     private Long id;
 
     @Column(nullable = false, length = 50, unique = true)
-    private String email;
+    private String userName;
 
     @Column(nullable = false, length = 50)
-    private String name;
-
-    @Column(nullable = false, length = 50, unique = true)
-    private String nickName;
-
-    @Column(nullable = false, unique = true)
-    private String userToken;
+    private String realName;
 
     @Column(nullable = false, unique = true)
     private String encryptedPwd;
+
+    public void setEncryptedPwd(String encryptedPwd){
+        this.encryptedPwd = encryptedPwd;
+    }
 }

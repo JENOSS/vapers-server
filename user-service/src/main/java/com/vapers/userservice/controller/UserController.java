@@ -4,9 +4,6 @@ package com.vapers.userservice.controller;
 import com.vapers.userservice.dto.UserDto;
 import com.vapers.userservice.repository.UserEntity;
 import com.vapers.userservice.service.UserService;
-import com.vapers.userservice.vo.RequestSignUp;
-import com.vapers.userservice.vo.ResponseUser;
-import io.micrometer.core.annotation.Timed;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,46 +19,40 @@ import java.util.List;
 @RequestMapping("/")
 public class UserController {
 
-    private Environment env;
-    private UserService userService;
+    private final Environment env;
+    private final UserService userService;
+    private final ModelMapper mapper;
 
     @Autowired
-    public UserController(Environment env, UserService userService) {
+    public UserController(Environment env,
+                          UserService userService,
+                          ModelMapper mapper) {
         this.env = env;
         this.userService = userService;
+        this.mapper = mapper;
     }
 
     @PostMapping("/users")
-    public ResponseEntity<ResponseUser> createUser(@RequestBody RequestSignUp user){
-        ModelMapper mapper = new ModelMapper();
-        mapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
-
-        UserDto userDto = mapper.map(user, UserDto.class);
-        userService.createUser(userDto);
-
-        ResponseUser responseUser = mapper.map(userDto, ResponseUser.class);
+    public ResponseEntity<UserDto.responseCreate> createUser(@RequestBody UserDto.requestCreate user){
+        UserDto.responseCreate responseUser = userService.createUser(user);
         return new ResponseEntity<>(responseUser, HttpStatus.CREATED);
     }
 
     @GetMapping("/users")
-    public ResponseEntity<List<ResponseUser>> getUsers(){
-        Iterable<UserEntity> userList = userService.getUserByAll();
-
-        List<ResponseUser> result = new ArrayList<>();
-        userList.forEach(v -> {
-            result.add(new ModelMapper().map(v, ResponseUser.class));
-        });
-
-        return ResponseEntity.status(HttpStatus.OK).body(result);
+    public ResponseEntity<List<UserDto.info>> getAllUsers(){
+        List<UserDto.info> userList = userService.getAllUsers();
+        return ResponseEntity.status(HttpStatus.OK).body(userList);
     }
 
-    @GetMapping("/users/{userToken}")
-    public ResponseEntity<ResponseUser> getUser(@PathVariable("userToken") String userToken){
-        UserDto userDto = userService.getUserByUserToken(userToken);
-
-        ResponseUser returnValue = new ModelMapper() .map(userDto, ResponseUser.class);
-
-        return ResponseEntity.status(HttpStatus.OK).body(returnValue);
+    @GetMapping("/user/{id}")
+    public ResponseEntity<UserDto.info> getUserByUserName(@PathVariable("id") Long id){
+        UserDto.info user = userService.getUserById(id);
+        return ResponseEntity.status(HttpStatus.OK).body(user);
     }
 
+    @GetMapping("/user")
+    public ResponseEntity<UserDto.info> getUserByUserName(@RequestParam("userName") String userName){
+        UserDto.info user = userService.getUserByUserName(userName);
+        return ResponseEntity.status(HttpStatus.OK).body(user);
+    }
 }

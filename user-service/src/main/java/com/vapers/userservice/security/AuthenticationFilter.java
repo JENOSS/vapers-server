@@ -2,9 +2,10 @@ package com.vapers.userservice.security;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.vapers.userservice.dto.AuthDto;
 import com.vapers.userservice.dto.UserDto;
+import com.vapers.userservice.service.AuthService;
 import com.vapers.userservice.service.UserService;
-import com.vapers.userservice.vo.RequestLogin;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import lombok.extern.slf4j.Slf4j;
@@ -30,14 +31,14 @@ import java.util.Map;
 
 @Slf4j
 public class AuthenticationFilter extends UsernamePasswordAuthenticationFilter {
-    private UserService userService;
+    private AuthService authService;
     private Environment env;
 
     public AuthenticationFilter(AuthenticationManager authenticationManager,
-                                UserService userService,
+                                AuthService authService,
                                 Environment env) {
         super.setAuthenticationManager(authenticationManager);
-        this.userService = userService;
+        this.authService = authService;
         this.env = env;
     }
 
@@ -45,13 +46,13 @@ public class AuthenticationFilter extends UsernamePasswordAuthenticationFilter {
     public Authentication attemptAuthentication(HttpServletRequest request,
                                                 HttpServletResponse response) throws AuthenticationException {
         try{
-            RequestLogin creds = new ObjectMapper().readValue(request.getInputStream(), RequestLogin.class);
+            UserDto.requestLogin creds = new ObjectMapper().readValue(request.getInputStream(), UserDto.requestLogin.class);
 
             return getAuthenticationManager().authenticate(
                     //마지막 매개변수는 권한
                     new UsernamePasswordAuthenticationToken(
-                            creds.getEmail(),
-                            creds.getPassword(),
+                            creds.getUserName(),
+                            creds.getPwd(),
                             new ArrayList<>())
             );
         } catch (IOException e){
@@ -65,18 +66,13 @@ public class AuthenticationFilter extends UsernamePasswordAuthenticationFilter {
                                             FilterChain chain,
                                             Authentication authResult) throws IOException, ServletException {
         String userName = ((User) authResult.getPrincipal()).getUsername();
-        UserDto userDetails = userService.getUserByEmail(userName);
 
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("name", userDetails.getName());
-        body.put("nickName", userDetails.getNickName());
-        body.put("userToken", userDetails.getUserToken());
-        body.put("email",userDetails.getEmail());
+        AuthDto.responseCreate tokens = authService.createToken(userName);
 
         response.setStatus(HttpStatus.OK.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 
-        new ObjectMapper().writeValue(response.getOutputStream(), body);
+        new ObjectMapper().writeValue(response.getOutputStream(), tokens);
     }
 
     @Override

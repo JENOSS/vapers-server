@@ -1,5 +1,6 @@
 package com.vapers.userservice.security;
 
+import com.vapers.userservice.service.AuthService;
 import com.vapers.userservice.service.UserService;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
@@ -15,12 +16,17 @@ import javax.servlet.Filter;
 @EnableWebSecurity
 public class WebSecurity extends WebSecurityConfigurerAdapter {
     private UserService userService;
+    private AuthService authService;
     private BCryptPasswordEncoder bCryptPasswordEncoder;
     private Environment env;
 
-    public WebSecurity(Environment env, UserService userService, BCryptPasswordEncoder bCryptPasswordEncoder){
+    public WebSecurity(Environment env,
+                       UserService userService,
+                       AuthService authService,
+                       BCryptPasswordEncoder bCryptPasswordEncoder){
         this.env = env;
         this.userService = userService;
+        this.authService = authService;
         this.bCryptPasswordEncoder = bCryptPasswordEncoder;
 
     }
@@ -42,7 +48,7 @@ public class WebSecurity extends WebSecurityConfigurerAdapter {
     }
 
     private Filter getAuthenticationFilter() throws Exception {
-        return new AuthenticationFilter(authenticationManager(), userService, env);
+        return new AuthenticationFilter(authenticationManager(), authService, env);
     }
 
     // 인증 관련
