@@ -17,62 +17,88 @@ import java.util.*;
 public class ProductServiceImpl implements ProductService{
     private final ProductRepository productRepository;
     private final Environment env;
+    private final ModelMapper mapper;
 
     @Autowired
-    public ProductServiceImpl(ProductRepository productRepository, Environment env) {
+    public ProductServiceImpl(ProductRepository productRepository,
+                              Environment env,
+                              ModelMapper mapper) {
         this.productRepository = productRepository;
         this.env = env;
+        this.mapper = mapper;
     }
 
     @Override
-    public void createProduct(ProductDto productDto) {
-        ModelMapper mapper = new ModelMapper();
-        mapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
+    public void createProduct(ProductDto.requestCreate productDto) {
         ProductEntity productEntity = mapper.map(productDto, ProductEntity.class);
         productRepository.save(productEntity);
     }
 
 
     @Override
-    public ProductEntity getProductById(Long id) {
-        return productRepository.findById(id).orElseThrow();
+    public ProductDto.Info getProductById(Long id) {
+        ProductEntity productEntity = productRepository.findById(id)
+                .orElseThrow(NoSuchElementException::new);
+
+        return mapper.map(productEntity, ProductDto.Info.class);
     }
 
     @Override
-    public Iterable<ProductEntity> getProductByCategory(Integer category) {
+    public List<ProductDto.Info> getProductsByCategory(Integer category) {
         Iterable<ProductEntity> productEntities = productRepository.findAllByCategory(category);
-        return productEntities;
+
+        List<ProductDto.Info> result = new ArrayList<>();
+        productEntities.forEach(v->{
+            result.add(mapper.map(v,ProductDto.Info.class));
+        });
+
+        return result;
     }
 
     @Override
-    public Iterable<ProductEntity> getProductByNameContaining(String name) {
-        List<ProductEntity> productEntities = productRepository.findByNameContainingIgnoreCase(name);
-        return productEntities.isEmpty() ? new ArrayList<>() : productEntities;
+    public List<ProductDto.Info> getProductsByNameContaining(String name) {
+        Iterable<ProductEntity> productEntities = productRepository.findByNameContainingIgnoreCase(name);
+
+        List<ProductDto.Info> result = new ArrayList<>();
+        productEntities.forEach(v->{
+            result.add(mapper.map(v,ProductDto.Info.class));
+        });
+
+        return result;
     }
 
     @Override
-    public Iterable<ProductEntity> getProductByAll() {
-        return productRepository.findAll();
+    public List<ProductDto.Info>  getAllProducts() {
+        Iterable<ProductEntity> productEntities = productRepository.findAll();
+
+        List<ProductDto.Info> result = new ArrayList<>();
+        productEntities.forEach(v->{
+            result.add(mapper.map(v,ProductDto.Info.class));
+        });
+
+        return result;
     }
 
 
     @Override
     public void updateProduct(Map<Object, Object> item) {
-        Long id = Long.parseLong(String.valueOf(item.get("productId")));
+        String stringId = String.valueOf(item.get("productId"));
         Integer qty = (Integer)item.get("qty");
         Boolean isCanceled = (Boolean)item.get("isCanceled");
 
-        if(id == null || qty == null){
-            throw new NullPointerException();
+        if(stringId == null || qty == null || isCanceled == null){
+            throw new RuntimeException();
         }
 
+        Long id = Long.parseLong(stringId);
         Optional<ProductEntity> entity = productRepository.findById(id);
+
         if(entity.isPresent()){
             ProductEntity productEntity = entity.get();
             if(isCanceled) {
-                productEntity.setStock(productEntity.getStock() + qty);
+                productEntity.changeStock(productEntity.getStock() + qty);
             }else{
-                productEntity.setStock(productEntity.getStock() - qty);
+                productEntity.changeStock(productEntity.getStock() - qty);
             }
             productRepository.save(productEntity);
         }

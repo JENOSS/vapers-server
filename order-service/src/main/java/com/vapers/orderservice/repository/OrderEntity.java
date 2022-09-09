@@ -1,13 +1,12 @@
 package com.vapers.orderservice.repository;
 
-import lombok.Data;
-import org.hibernate.annotations.ColumnDefault;
+import com.vapers.orderservice.dto.ProductDto;
+import lombok.Getter;
 
 import javax.persistence.*;
-import java.io.Serializable;
-import java.util.Date;
 
-@Data
+
+@Getter
 @Entity
 @Table(name= "orders")
 public class OrderEntity {
@@ -22,6 +21,9 @@ public class OrderEntity {
     private String productName;
 
     @Column(nullable = false)
+    private String userName;
+
+    @Column(nullable = false)
     private Integer qty;
 
     @Column(nullable = false)
@@ -31,8 +33,21 @@ public class OrderEntity {
     private Integer totalPrice;
 
     @Column(nullable = false)
-    private String userToken;
-
-    @Column(nullable = false)
     private Boolean isCanceled;
+
+    public void changeCancel(boolean isCanceled){
+        this.isCanceled = isCanceled;
+    }
+
+    public void setProduct(ProductDto product){
+        this.productName = product.getName();
+        this.unitPrice = product.getPrice();
+    }
+
+    public void setTotalPrice(){
+        this.totalPrice = unitPrice * qty;
+    }
+
+
+
 }

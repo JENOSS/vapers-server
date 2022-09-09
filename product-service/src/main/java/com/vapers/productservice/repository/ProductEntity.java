@@ -1,12 +1,13 @@
 package com.vapers.productservice.repository;
 
 import lombok.Data;
+import lombok.Getter;
 import org.hibernate.annotations.ColumnDefault;
 
 import javax.persistence.*;
 import java.util.Date;
 
-@Data
+@Getter
 @Entity
 @Table(name = "product")
 public class ProductEntity {
@@ -31,4 +32,8 @@ public class ProductEntity {
 
     @Column(nullable = false)
     private Integer price;
+
+    public void changeStock(Integer stock){
+        this.stock = stock;
+    }
 }

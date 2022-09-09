@@ -1,20 +1,19 @@
 package com.vapers.userservice.service;
 
 import com.vapers.userservice.dto.AuthDto;
+import com.vapers.userservice.exception.UnauthorizedException;
 import com.vapers.userservice.repository.AuthEntity;
 import com.vapers.userservice.repository.AuthRepository;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.*;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
-import java.util.NoSuchElementException;
-import java.util.Optional;
-import java.util.UUID;
+import javax.naming.AuthenticationException;
+import javax.security.auth.message.AuthException;
+import java.util.*;
 
 @Service
 public class AuthServiceImpl implements AuthService{
@@ -32,25 +31,13 @@ public class AuthServiceImpl implements AuthService{
     }
 
     @Override
-    public AuthDto.Token getAuthByUserName(String userName) {
-        Optional<AuthEntity> auth = authRepository.findByUserName(userName);
-
-        if(auth.isEmpty())
-            throw new NoSuchElementException(userName);
-
-
-        return mapper.map(auth, AuthDto.Token.class);
-    }
-
-    @Override
-    public AuthDto.Token getAuthByToken(String token) {
-        Optional<AuthEntity> auth = authRepository.findByRefreshToken(token);
-
-        if(auth.isEmpty())
-            throw new NoSuchElementException(token);
-
-
-        return mapper.map(auth, AuthDto.Token.class);
+    public List<AuthDto.Token> getAllTokens() {
+        Iterable<AuthEntity> authEntities = authRepository.findAll();
+        List<AuthDto.Token> result = new ArrayList<>();
+        authEntities.forEach(v->{
+            result.add(mapper.map(v,AuthDto.Token.class));
+        });
+        return result;
     }
 
     @Override
@@ -69,22 +56,25 @@ public class AuthServiceImpl implements AuthService{
                 .signWith(SignatureAlgorithm.HS256, env.getProperty("token.secret"))
                 .compact();
 
-        clearRefreshToken(userName);
+        AuthEntity authEntity = authRepository.findByUserName(userName).orElse(new AuthEntity());
+        authEntity.changeUserName(userName);
+        authEntity.changeRefreshToken(refreshToken);
 
-        AuthDto.Token authToken = new AuthDto.Token(userName, refreshToken);
-        AuthEntity authEntity = mapper.map(authToken, AuthEntity.class);
         authRepository.save(authEntity);
-
         return new AuthDto.responseCreate(accessToken, refreshToken);
     }
 
     @Override
-    public Boolean isValidToken(String token, String userName) {
-        return getAuthByToken(token).getUserName().equals(userName);
+    public AuthDto.responseCreate recreateToken(AuthDto.requestCreate request){
+        if(!isValidToken(request.getUserName(), request.getRefreshToken()))
+            throw new UnauthorizedException();
+
+        return createToken(request.getUserName());
     }
 
-    public void clearRefreshToken(String userName) {
-        if(authRepository.findByUserName(userName).isPresent())
-            authRepository.deleteAllByUserName(userName);
+    public Boolean isValidToken(String userName, String token) {
+        Optional<AuthEntity> entity = authRepository.findByUserName(userName);
+        return entity.map(authEntity -> authEntity.getRefreshToken().equals(token)).orElse(true);
     }
+
 }

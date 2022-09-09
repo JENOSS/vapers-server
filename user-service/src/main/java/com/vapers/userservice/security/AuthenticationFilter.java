@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vapers.userservice.dto.AuthDto;
 import com.vapers.userservice.dto.UserDto;
+import com.vapers.userservice.exception.ErrorCode;
 import com.vapers.userservice.service.AuthService;
 import com.vapers.userservice.service.UserService;
 import io.jsonwebtoken.Jwts;
@@ -72,7 +73,11 @@ public class AuthenticationFilter extends UsernamePasswordAuthenticationFilter {
         response.setStatus(HttpStatus.OK.value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 
-        new ObjectMapper().writeValue(response.getOutputStream(), tokens);
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("accessToken", tokens.getAccessToken());
+        body.put("refreshToken", tokens.getRefreshToken());
+
+        new ObjectMapper().writeValue(response.getOutputStream(), body);
     }
 
     @Override
@@ -81,8 +86,9 @@ public class AuthenticationFilter extends UsernamePasswordAuthenticationFilter {
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 
         Map<String, Object> body = new LinkedHashMap<>();
-        body.put("code", HttpStatus.UNAUTHORIZED.value());
-        body.put("error", failed.getMessage());
+        body.put("code", ErrorCode.UNAUTHORIZED_ERROR.getCode());
+        body.put("status", ErrorCode.UNAUTHORIZED_ERROR.getStatus());
+        body.put("message", ErrorCode.UNAUTHORIZED_ERROR.getMessage());
 
         new ObjectMapper().writeValue(response.getOutputStream(), body);
     }

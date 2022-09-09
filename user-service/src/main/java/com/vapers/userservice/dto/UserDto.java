@@ -1,5 +1,6 @@
 package com.vapers.userservice.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
 
@@ -8,6 +9,7 @@ import java.util.List;
 
 public class UserDto {
 
+    @Getter
     public static class info{
         private Long id;
         private String userName;
@@ -25,6 +27,7 @@ public class UserDto {
         private String userName;
         private String pwd;
     }
+    @Getter
     public static class responseCreate{
         private String userName;
         private String realName;

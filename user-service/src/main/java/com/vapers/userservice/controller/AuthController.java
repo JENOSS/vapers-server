@@ -9,6 +9,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -28,10 +29,15 @@ public class AuthController {
     }
 
     @PostMapping("/create")
-    public ResponseEntity<AuthDto.responseCreate> createToken(AuthDto.requestCreate request){
+    public ResponseEntity<AuthDto.responseCreate> createToken(@RequestBody AuthDto.requestCreate request){
         AuthDto.responseCreate result = authService.createToken(request.getUserName());
         return ResponseEntity.status(HttpStatus.CREATED).body(result);
     }
 
+    @PostMapping("/recreate")
+    public ResponseEntity<AuthDto.responseCreate> recreateToken(@RequestBody AuthDto.requestCreate request){
+        AuthDto.responseCreate result = authService.recreateToken(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(result);
+    }
 
 }

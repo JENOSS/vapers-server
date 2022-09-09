@@ -4,8 +4,7 @@ import com.vapers.orderservice.dto.OrderDto;
 import com.vapers.orderservice.messagequeue.KafkaProducer;
 import com.vapers.orderservice.repository.OrderEntity;
 import com.vapers.orderservice.service.OrderService;
-import com.vapers.orderservice.vo.RequestOrderCreate;
-import com.vapers.orderservice.vo.ResponseOrder;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.bouncycastle.math.raw.Mod;
 import org.modelmapper.ModelMapper;
@@ -16,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,63 +23,63 @@ import java.util.List;
 @RequestMapping("/")
 @Slf4j
 public class OrderController {
-    private Environment env;
-    private OrderService orderService;
-    private KafkaProducer kafkaProducer;
+    private final Environment env;
+    private final OrderService orderService;
+    private final KafkaProducer kafkaProducer;
+    private final ModelMapper mapper;
 
     @Autowired
     public OrderController(Environment env,
                            OrderService orderService,
-                           KafkaProducer kafkaProducer) {
+                           KafkaProducer kafkaProducer,
+                           ModelMapper mapper) {
         this.env = env;
         this.orderService = orderService;
         this.kafkaProducer = kafkaProducer;
+        this.mapper = mapper;
     }
 
     @PostMapping("/order")
-    public ResponseEntity<Void> createOrder(@RequestBody RequestOrderCreate requestOrderCreate){
-        ModelMapper mapper = new ModelMapper();
-        mapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
+    public ResponseEntity<Void> createOrder(@RequestBody OrderDto.requestCreate requestOrderCreate){
+        OrderDto.info newOrder = orderService.createOrder(requestOrderCreate);
+        OrderDto.produce produce = mapper.map(newOrder, OrderDto.produce.class);
 
-        OrderDto orderDto = mapper.map(requestOrderCreate, OrderDto.class);
-        orderDto.setIsCanceled(false);
-
-        OrderDto newOrder = orderService.createOrder(orderDto);
         /* kafka */
-        if(newOrder.getUnitPrice() != -1) kafkaProducer.send("vapers-order-topic", orderDto);
+        kafkaProducer.send("vapers-order-topic", produce);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(null);
     }
 
     @GetMapping("/orders")
-    public ResponseEntity<List<ResponseOrder>> getOrders(){
-        Iterable<OrderEntity> orderList = orderService.getOrders();
+    public ResponseEntity<List<OrderDto.info>> getOrders(HttpServletRequest request){
+        String userName = request.getParameter("userName");
 
-        List<ResponseOrder> result = new ArrayList<>();
-        orderList.forEach(v -> {
-            result.add(new ModelMapper().map(v, ResponseOrder.class));
-        });
+        if(userName != null){
+            return getOrdersByUserName(userName);
+        }else{
+            List<OrderDto.info> orderList = orderService.getOrders();
+            return ResponseEntity.status(HttpStatus.OK).body(orderList);
+        }
 
-        return ResponseEntity.status(HttpStatus.OK).body(result);
     }
 
-    @GetMapping("/orders/{userToken}")
-    public ResponseEntity<List<ResponseOrder>> getOrdersByUserToken(@PathVariable("userToken") String userToken){
-        Iterable<OrderEntity> orderList = orderService.getOrdersByUserToken(userToken);
+    @GetMapping("/order/{id}")
+    public ResponseEntity<OrderDto.info> getOrderById(@PathVariable("id") Long id){
+        OrderDto.info order = orderService.getOrderById(id);
+        return ResponseEntity.status(HttpStatus.OK).body(order);
+    }
 
-        List<ResponseOrder> result = new ArrayList<>();
-        orderList.forEach(v -> {
-            result.add(new ModelMapper().map(v, ResponseOrder.class));
-        });
-
-        return ResponseEntity.status(HttpStatus.OK).body(result);
+    public ResponseEntity<List<OrderDto.info>> getOrdersByUserName(String userName){
+        List<OrderDto.info> order = orderService.getOrdersByUserName(userName);
+        return ResponseEntity.status(HttpStatus.OK).body(order);
     }
 
     @GetMapping("/order/cancel/{id}")
     public ResponseEntity<Void> cancelOrder(@PathVariable("id") Long id){
-        OrderDto orderDto = orderService.cancelOrder(id);
+        OrderDto.info orderDto = orderService.cancelOrder(id);
+        OrderDto.produce produce = mapper.map(orderDto, OrderDto.produce.class);
         /* kafka */
-        kafkaProducer.send("vapers-order-topic", orderDto);
+        kafkaProducer.send("vapers-order-topic", produce);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(null);
     }

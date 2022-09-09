@@ -6,5 +6,5 @@ import java.util.List;
 
 public interface ProductRepository extends CrudRepository<ProductEntity, Long> {
     Iterable<ProductEntity> findAllByCategory(Integer category);
-    List<ProductEntity>  findByNameContainingIgnoreCase(String name);
+    Iterable<ProductEntity>  findByNameContainingIgnoreCase(String name);
 }

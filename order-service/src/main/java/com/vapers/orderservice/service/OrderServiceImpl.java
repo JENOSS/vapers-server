@@ -2,9 +2,10 @@ package com.vapers.orderservice.service;
 
 import com.vapers.orderservice.client.ProductServiceClient;
 import com.vapers.orderservice.dto.OrderDto;
+import com.vapers.orderservice.dto.ProductDto;
+import com.vapers.orderservice.exception.OutOfStockException;
 import com.vapers.orderservice.repository.OrderEntity;
 import com.vapers.orderservice.repository.OrderRepository;
-import com.vapers.orderservice.vo.ResponseProduct;
 import feign.FeignException;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
@@ -14,7 +15,10 @@ import org.springframework.cloud.client.circuitbreaker.CircuitBreaker;
 import org.springframework.cloud.client.circuitbreaker.CircuitBreakerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -22,61 +26,82 @@ public class OrderServiceImpl implements OrderService{
     private final OrderRepository orderRepository;
     private final ProductServiceClient productServiceClient;
     private final CircuitBreakerFactory circuitBreakerFactory;
+    private final ModelMapper mapper;
 
     @Autowired
     public OrderServiceImpl(OrderRepository orderRepository,
                             ProductServiceClient productServiceClient,
-                            CircuitBreakerFactory circuitBreakerFactory) {
+                            CircuitBreakerFactory circuitBreakerFactory,
+                            ModelMapper mapper) {
         this.orderRepository = orderRepository;
         this.productServiceClient = productServiceClient;
         this.circuitBreakerFactory = circuitBreakerFactory;
+        this.mapper = mapper;
     }
 
     @Override
-    public OrderDto createOrder(OrderDto orderDto) {
+    public OrderDto.info createOrder(OrderDto.requestCreate requestCreate) {
 
         log.info("before call product-service");
         CircuitBreaker circuitBreaker = circuitBreakerFactory.create("circuitBreaker");
-        ResponseProduct product = circuitBreaker.run(() -> productServiceClient.getProduct(orderDto.getProductId()),
-                throwable -> null);
+        ProductDto product = circuitBreaker.run(() -> productServiceClient.getProduct(requestCreate.getProductId()),
+                throwable -> {throw new RuntimeException();} );
         log.info("after call product-service");
 
-        orderDto.setUnitPrice(product != null ? product.getPrice() : -1);
-        orderDto.setTotalPrice(product != null ? product.getPrice() * orderDto.getQty() : -1);
-        orderDto.setProductName(product != null ? product.getName() : "");
+        if(product.getStock() - requestCreate.getQty() <= 0) throw new OutOfStockException(product.getStock());
 
-        ModelMapper mapper = new ModelMapper();
-        mapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
-        OrderEntity orderEntity = mapper.map(orderDto, OrderEntity.class);
+        OrderEntity orderEntity = mapper.map(requestCreate, OrderEntity.class);
+        orderEntity.setProduct(product);
+        orderEntity.setTotalPrice();
+        orderEntity.changeCancel(false);
+
         orderRepository.save(orderEntity);
 
-        return orderDto;
+        return mapper.map(orderEntity, OrderDto.info.class);
     }
 
     @Override
-    public OrderDto cancelOrder(Long id) {
-        OrderEntity orderEntity = getOrderById(id);
-        orderEntity.setIsCanceled(true);
-        orderRepository.save(orderEntity);
+    public OrderDto.info cancelOrder(Long id) {
+        OrderEntity entity = orderRepository.findById(id).orElseThrow(() -> {
+            throw new NoSuchElementException();
+        });
 
-        ModelMapper mapper = new ModelMapper();
-        mapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
+        entity.changeCancel(true);
+        orderRepository.save(entity);
 
-        return mapper.map(orderEntity, OrderDto.class);
+        return mapper.map(entity, OrderDto.info.class);
     }
 
     @Override
-    public Iterable<OrderEntity> getOrders() {
-        return orderRepository.findAll();
+    public List<OrderDto.info> getOrders() {
+        Iterable<OrderEntity> entities = orderRepository.findAll();
+
+        List<OrderDto.info> result = new ArrayList<>();
+        entities.forEach(v -> {
+            result.add(mapper.map(v, OrderDto.info.class));
+        });
+
+        return result;
     }
 
     @Override
-    public Iterable<OrderEntity> getOrdersByUserToken(String userToken) {
-        return orderRepository.findByUserToken(userToken);
+    public List<OrderDto.info> getOrdersByUserName(String userName) {
+        Iterable<OrderEntity> entities = orderRepository.findByUserName(userName);
+
+        List<OrderDto.info> result = new ArrayList<>();
+        entities.forEach(v -> {
+            result.add(mapper.map(v, OrderDto.info.class));
+        });
+
+        return result;
     }
 
     @Override
-    public OrderEntity getOrderById(Long id) {
-        return orderRepository.findById(id).orElseThrow();
+    public OrderDto.info getOrderById(Long id) {
+        OrderEntity entity = orderRepository.findById(id).orElseThrow(() -> {
+            throw new NoSuchElementException();
+        });
+
+        return mapper.map(entity, OrderDto.info.class);
     }
 }

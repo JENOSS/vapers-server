@@ -55,6 +55,7 @@ public class UserServiceImpl implements UserService{
 
         UserEntity userEntity = mapper.map(userDto, UserEntity.class);
         userEntity.setEncryptedPwd(passwordEncoder.encode(userDto.getPwd()));
+
         userRepository.save(userEntity);
 
         return mapper.map(userEntity, UserDto.responseCreate.class);
@@ -65,9 +66,9 @@ public class UserServiceImpl implements UserService{
         Optional<UserEntity> userEntity = userRepository.findByUserName(userName);
 
         if(userEntity.isEmpty())
-            throw new UsernameNotFoundException(userName);
+            throw new NoSuchElementException();
 
-        return mapper.map(userEntity, UserDto.info.class);
+        return mapper.map(userEntity.get(), UserDto.info.class);
     }
 
     @Override
@@ -86,9 +87,9 @@ public class UserServiceImpl implements UserService{
         Optional<UserEntity> userEntity = userRepository.findById(id);
 
         if(userEntity.isEmpty())
-            throw new NoSuchElementException(id.toString());
+            throw new NoSuchElementException();
 
-        return mapper.map(userEntity, UserDto.info.class);
+        return mapper.map(userEntity.get(), UserDto.info.class);
     }
 
     private void validateDuplicateUser(String userName) {
