@@ -5,7 +5,7 @@
 # Tech
 
 - Java 11, Spring boot 2.7.3
-- Spring Data JPA, Spring Security, Spring Cloud Config, Spring Cloud Gateway, Spring Cloud Eureka, CircuitBreaker, OpenFeign
+- Spring Data JPA, Spring Security, Spring Cloud Config, Spring Cloud Gateway, Spring Cloud Eureka, Resilience4j, OpenFeign
 - Mysql, RabbitMQ, Kafka, Docker
 &nbsp;
 
