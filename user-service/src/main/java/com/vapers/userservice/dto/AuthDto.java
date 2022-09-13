@@ -7,20 +7,19 @@ import lombok.Getter;
 
 public class AuthDto {
 
-    @Data
-    @AllArgsConstructor
+    @Getter
     public static class Token {
         private String userName;
         private String refreshToken;
     }
 
-    @Data
+    @Getter
     public static class requestCreate{
         private String userName;
         private String refreshToken;
     }
 
-    @Data
+    @Getter
     @AllArgsConstructor
     public static class responseCreate{
         private String accessToken;
