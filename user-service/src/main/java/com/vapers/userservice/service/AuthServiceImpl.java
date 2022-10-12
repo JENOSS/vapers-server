@@ -10,12 +10,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.naming.AuthenticationException;
 import javax.security.auth.message.AuthException;
 import java.util.*;
 
 @Service
+@Transactional(readOnly = true)
 public class AuthServiceImpl implements AuthService{
     private final AuthRepository authRepository;
     private final ModelMapper mapper;
@@ -39,7 +41,7 @@ public class AuthServiceImpl implements AuthService{
         });
         return result;
     }
-
+    @Transactional
     @Override
     public AuthDto.responseCreate createToken(String userName) {
         String accessToken = Jwts.builder()
@@ -63,7 +65,7 @@ public class AuthServiceImpl implements AuthService{
         authRepository.save(authEntity);
         return new AuthDto.responseCreate(accessToken, refreshToken);
     }
-
+    @Transactional
     @Override
     public AuthDto.responseCreate recreateToken(AuthDto.requestCreate request){
         if(!isValidToken(request.getUserName(), request.getRefreshToken()))

@@ -9,11 +9,13 @@ import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
 @Service
 @Slf4j
+@Transactional(readOnly = true)
 public class ProductServiceImpl implements ProductService{
     private final ProductRepository productRepository;
     private final Environment env;
@@ -27,7 +29,7 @@ public class ProductServiceImpl implements ProductService{
         this.env = env;
         this.mapper = mapper;
     }
-
+    @Transactional
     @Override
     public void createProduct(ProductDto.requestCreate productDto) {
         ProductEntity productEntity = mapper.map(productDto, ProductEntity.class);
@@ -80,6 +82,7 @@ public class ProductServiceImpl implements ProductService{
     }
 
 
+    @Transactional
     @Override
     public void updateProduct(Map<Object, Object> item) {
         String stringId = String.valueOf(item.get("productId"));

@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.circuitbreaker.CircuitBreaker;
 import org.springframework.cloud.client.circuitbreaker.CircuitBreakerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,6 +23,7 @@ import java.util.Optional;
 
 @Service
 @Slf4j
+@Transactional(readOnly = true)
 public class OrderServiceImpl implements OrderService{
     private final OrderRepository orderRepository;
     private final ProductServiceClient productServiceClient;
@@ -38,7 +40,7 @@ public class OrderServiceImpl implements OrderService{
         this.circuitBreakerFactory = circuitBreakerFactory;
         this.mapper = mapper;
     }
-
+    @Transactional
     @Override
     public OrderDto.info createOrder(OrderDto.requestCreate requestCreate) {
 
@@ -59,7 +61,7 @@ public class OrderServiceImpl implements OrderService{
 
         return mapper.map(orderEntity, OrderDto.info.class);
     }
-
+    @Transactional
     @Override
     public OrderDto.info cancelOrder(Long id) {
         OrderEntity entity = orderRepository.findById(id).orElseThrow(() -> {
