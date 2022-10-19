@@ -1,6 +1,7 @@
 package com.vapers.userservice.dto;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
 
@@ -16,6 +17,7 @@ public class UserDto {
         private String realName;
     }
     @Getter
+    @AllArgsConstructor
     public static class requestCreate{
         private String userName;
         private String realName;

@@ -10,6 +10,5 @@ public interface UserService extends UserDetailsService {
     UserDto.responseCreate createUser(UserDto.requestCreate userDto);
     List<UserDto.info> getAllUsers();
     UserDto.info getUserByUserName(String userName);
-
     UserDto.info getUserById(Long id);
 }

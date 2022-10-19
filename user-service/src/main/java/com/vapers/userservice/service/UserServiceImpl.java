@@ -25,17 +25,14 @@ import java.util.*;
 public class UserServiceImpl implements UserService{
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder passwordEncoder;
-    private final Environment env;
     private final ModelMapper mapper;
 
     @Autowired
     public UserServiceImpl(UserRepository userRepository,
                            BCryptPasswordEncoder passwordEncoder,
-                           Environment env,
                            ModelMapper mapper) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
-        this.env = env;
         this.mapper = mapper;
     }
 
