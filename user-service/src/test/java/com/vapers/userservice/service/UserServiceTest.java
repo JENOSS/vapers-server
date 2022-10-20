@@ -16,6 +16,7 @@ import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.reset;
 
 @ExtendWith(MockitoExtension.class)
 public class UserServiceTest {
@@ -29,6 +30,11 @@ public class UserServiceTest {
     @InjectMocks
     UserServiceImpl userService;
 
+    @AfterEach
+    void resetMock(){
+        reset(userRepository);
+        reset(passwordEncoder);
+    }
 
     @Test
     void createUserTest(){
@@ -38,14 +44,13 @@ public class UserServiceTest {
 
         UserDto.requestCreate userDto = new UserDto.requestCreate("userName","realName", "pwd");
         userService.createUser(userDto);
-
     }
 
     @Test
     void createUserTest_Duplicate(){
         Mockito.when(userRepository.findByUserName(any(String.class))).thenReturn(Optional.of(new UserEntity()));
-//        Mockito.when(userRepository.save(any(UserEntity.class))).then(AdditionalAnswers.returnsFirstArg());
-//        Mockito.when(passwordEncoder.encode(any(CharSequence.class))).thenReturn("encrypted");
+        Mockito.when(userRepository.save(any(UserEntity.class))).then(AdditionalAnswers.returnsFirstArg());
+        Mockito.when(passwordEncoder.encode(any(CharSequence.class))).thenReturn("encrypted");
 
         UserDto.requestCreate userDto = new UserDto.requestCreate("userName","realName", "pwd");
         Assertions.assertThrows(DuplicateKeyException.class,
